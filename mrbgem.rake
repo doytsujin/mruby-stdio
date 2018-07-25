@@ -3,5 +3,5 @@ MRuby::Gem::Specification.new('mruby-stdio') do |spec|
   spec.author = 'Hiroshi Mimaki'
   spec.description = 'STDOUT and STDIN for embedded system'
 
-  spec.add_test_dependency('mruby-string-ext')
+  spec.add_dependency('mruby-string-ext')
 end
