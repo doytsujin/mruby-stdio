@@ -5,6 +5,7 @@ $/ = "\n" unless $/
 #
 
 class STDOUT
+  @@rs = $/
   class << self
     def _putc(c)
       raise "STDOUT._putc not implemented."
@@ -15,27 +16,63 @@ class STDOUT
       _putc(c)
     end
 
+    def print(*args)
+      args.each {|o|
+        o = o.to_s unless o.is_a?(String)
+        o.each_char {|c| putc(c)}
+      }
+    end
+
     def puts(*args)
       unless args
-        putc $/
+        putc @@rs
       else
         args.each {|o|
           o = o.to_s unless o.is_a?(String)
-          o << $/ unless o[-1] == $/
+          o << @@rs unless o[-1] == @@rs
           o.each_char {|c| putc(c)}
         }
       end
       nil
     end
+
+    def p(*args)
+      unless args
+        putc @@rs
+      else
+        args.each {|o|
+          o.inspect.each_char {|c| putc(c)}
+          putc @@rs
+        }
+      end
+      args[0]
+    end
   end
 end
 
+#
+# STDERR
+#
+
+class STDERR < STDOUT
+  class << self
+    def _err_putc(c)
+      raise "STDERR._putc not implemented."
+    end
+
+    def putc(c)
+      c = c.ord if c.is_a?(String)
+      _err_putc(c)
+    end
+  end
+end
 
 #
 # STDIN
 #
 
 class STDIN
+  @@rs = $/
   class << self
     def _getc
       raise "STDIN._getc not implemented."
@@ -47,7 +84,7 @@ class STDIN
     end
 
     def gets(*args)
-      rs = $/
+      rs = @@rs
       limit = -1
       case args.size
       when 0
@@ -66,11 +103,12 @@ class STDIN
       end
 
       str = ''
-      while c = getc
+      loop {
+        until c = getc; end
         str << c
         break if c == rs
         break if limit > 0 && str.length >= limit
-      end
+      }
       $_ = str.length > 0 ? str : nil
     end
 
@@ -84,6 +122,7 @@ end
 
 $stdin = STDIN
 $stdout = STDOUT
+$stderr = STDERR
 
 module Kernel
   def getc
@@ -96,5 +135,17 @@ module Kernel
 
   def putc(c)
     $stdout.putc(c) if $stdout
+  end
+
+  def print(*args)
+    $stdout.print(*args) if $stdout
+  end
+
+  def puts(*args)
+    $stdout.puts(*args) if $stdout
+  end
+
+  def p(*args)
+    $stdout.puts(*args) if $stdout
   end
 end
